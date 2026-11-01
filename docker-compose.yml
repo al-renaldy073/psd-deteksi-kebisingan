@@ -10,10 +10,9 @@ services:
       context: .
       dockerfile: Dockerfile
     image: noise-detection:kelompok6
-    container_name: noise-detection-kelompok6
     restart: unless-stopped
     ports:
-      - "8006:8006"
+      - "8021:8006"
     environment:
       - HOST=0.0.0.0
       - PORT=8006
