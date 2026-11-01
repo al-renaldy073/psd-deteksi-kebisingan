@@ -1,0 +1,75 @@
+{
+  "model": "SVM (Semua fitur relatif)",
+  "n_file_mentah": 200,
+  "n_file_bersih": 170,
+  "n_file_dipakai": 164,
+  "n_perekam": 32,
+  "n_train": 132,
+  "n_test": 32,
+  "pembersihan": {
+    "salinan identik dari file lain": 22,
+    "kode diabaikan: label diduga terbalik: rekaman 'berisik' 13,8 dB lebih pelan daripada 'tidak berisik'; satu-satunya dari file lain": 6,
+    "audio identik dengan label berbeda (kontradiksi)": 2
+  },
+  "tanpa_baseline": 6,
+  "test": {
+    "accuracy": 0.9062,
+    "precision": 0.85,
+    "recall": 1.0,
+    "f1": 0.9189
+  },
+  "confusion_matrix(berisik,tidak_berisik)": [
+    [
+      17,
+      0
+    ],
+    [
+      3,
+      12
+    ]
+  ],
+  "cv_per_perekam": {
+    "model_terbaik": 0.8943,
+    "std": 0.0149,
+    "pembanding_tanpa_kalibrasi": 0.8006,
+    "std_pembanding": 0.0176,
+    "nama_pembanding": "Logistic Regression (Tanpa kalibrasi: semua fitur mentah)"
+  },
+  "model_terbaik": {
+    "algoritma": "SVM",
+    "kombinasi_fitur": "Semua fitur relatif",
+    "fitur_terpilih": [
+      "rel_rms_db",
+      "rms_variasi",
+      "rel_level_db_p10",
+      "rel_level_db_p50",
+      "rel_level_db_p90",
+      "rel_banda_1_db",
+      "rel_banda_2_db",
+      "rel_banda_3_db",
+      "rel_banda_4_db",
+      "rel_banda_5_db",
+      "rel_banda_6_db",
+      "rel_mfcc_1_mean",
+      "zcr_mean",
+      "centroid_mean",
+      "rolloff_std",
+      "bandwidth_std",
+      "mfcc_3_mean",
+      "mfcc_5_mean",
+      "mfcc_7_mean",
+      "mfcc_8_mean",
+      "mfcc_11_mean",
+      "mfcc_12_std",
+      "mfcc_13_std"
+    ],
+    "params": {
+      "C": 0.3,
+      "kernel": "linear",
+      "scaler": "PowerTransformer"
+    },
+    "cv_akurasi_latih": 0.8918
+  },
+  "sample_rate": 16000,
+  "chunk_detik": 10
+}

@@ -1,0 +1,22 @@
+# Menjalankan image aplikasi (kelompok 6 memakai port 8006).
+#   docker compose up --build        jalankan (build image bila belum ada)
+#   docker compose up -d --build     jalankan di latar belakang
+#   docker compose down              hentikan
+# Server dapat dijangkau melalui IP LAN (http), tetapi akses mikrofon browser dari HP/laptop lain memerlukan HTTPS.
+# Untuk HTTPS jalankan bersama docker-compose.https.yml (Caddy + sertifikat otomatis), lihat README.
+services:
+  noise-detection:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: noise-detection:kelompok6
+    container_name: noise-detection-kelompok6
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8006
+      - TRUST_PROXY=1           # percayai header X-Forwarded-* dari Caddy (HTTPS)
+    volumes:
+      - ./data:/app/data        # rekaman baru dari tab "Kumpulkan data" tersimpan di komputer

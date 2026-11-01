@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#070B14">
+  <title>Sound Lab · Deteksi Kebisingan · Kelompok 6</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%234C8DFF'/%3E%3Cpath d='M14 32h4M22 22v20M30 14v36M38 20v24M46 26v12M52 32h-2' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ aset_v('style.css') }}">
+</head>
+<body>
+<div class="bg-glow" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="brand" href="#stream" aria-label="Sound Lab Kelompok 6, ke halaman awal">
+      <svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4C8DFF"/><stop offset="1" stop-color="#22D3EE"/></linearGradient></defs><rect width="40" height="40" rx="11" fill="url(#lg)"/><path d="M9 20h2.5M15 13v14M20.5 8v24M26 14v12M31.5 18v4" stroke="#07101f" stroke-width="2.8" stroke-linecap="round"/></svg>
+      <span><b>Sound Lab</b><small>Kelompok 6</small></span>
+    </a>
+    <nav class="tabs" id="tabs" aria-label="Navigasi utama">
+      <a class="tab aktif" href="#stream" data-tab="stream">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0M12 17v4"/></svg><span>Streaming</span></a>
+      <a class="tab" href="#prediksi" data-tab="prediksi">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5m0 0-4 4m4-4 4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg><span><span class="l-panjang">Prediksi file</span><span class="l-pendek">Prediksi</span></span></a>
+      <a class="tab" href="#eval" data-tab="eval">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10m7 10V4m7 16v-7"/></svg><span><span class="l-panjang">Tentang model</span><span class="l-pendek">Model</span></span></a>
+      <a class="tab" href="#proyek" data-tab="proyek">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5.5a3 3 0 0 1 0 5.5M17 14.5a6 6 0 0 1 4 5.5"/></svg><span><span class="l-panjang">Tentang proyek</span><span class="l-pendek">Proyek</span></span></a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ===================== STREAMING ===================== -->
+  <section id="stream" class="panel aktif">
+    <div class="section-heading">
+      <div>
+        <span class="eyebrow">Live monitoring</span>
+        <h1>Deteksi suara <span class="grad">berisik</span> atau <span class="grad2">tidak berisik</span></h1>
+        <p class="lead">Rekam suara ruangan dari mikrofon, lihat gelombangnya secara langsung, dan dapatkan peringatan suara bila terdeteksi berisik.</p>
+      </div>
+      <span class="section-tag">Model aktif: <b id="modelInfo">Memuat model ...</b></span>
+    </div>
+
+    <div id="peringatanMic" class="alert alert-err" role="alert" hidden></div>
+
+    <div class="stream-grid">
+      <div class="card monitor">
+        <div class="card-heading">
+          <div><h3>Monitor suara</h3><p class="muted">Gelombang tampil selama mikrofon menangkap suara.</p></div>
+          <span class="pill" id="pillMic">Mikrofon belum aktif</span>
+        </div>
+
+        <div class="scope" id="scope">
+          <canvas id="gelombang" aria-label="Visualisasi gelombang suara dari mikrofon" role="img"></canvas>
+          <div class="scope-hud">
+            <span class="hud-fase" id="hudFase" data-fase="siaga">Siaga</span>
+            <span class="hud-waktu" id="hudWaktu">0,0 / 10 dtk</span>
+          </div>
+          <div class="scope-kosong" id="scopeKosong">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0M12 17v4"/></svg>
+            <span>Tekan <b>Mulai streaming</b> untuk melihat gelombang suara</span>
+          </div>
+          <div class="scope-bawah">
+            <div class="level" title="Level sinyal mikrofon, dalam dBFS (0 dBFS = batas maksimum)">
+              <span>Level</span><div class="level-track"><i id="levelBar"></i></div><b id="levelTeks">—</b>
+            </div>
+            <div class="seg" role="group" aria-label="Tampilan gelombang">
+              <button type="button" class="aktif" data-mode="garis" aria-pressed="true">Gelombang</button>
+              <button type="button" data-mode="batang" aria-pressed="false">Batang</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="progress-track" aria-hidden="true"><div id="bar"></div></div>
+
+        <ol class="fase" id="fase" aria-label="Tahapan siklus">
+          <li data-fase="kalibrasi" hidden>Kalibrasi</li>
+          <li data-fase="rekam">Rekam</li>
+          <li data-fase="proses">Proses</li>
+          <li data-fase="jeda">Jeda</li>
+        </ol>
+
+        <div class="status-line" aria-live="polite"><span class="status-indicator" id="statusDot"></span><b id="status">Belum dimulai</b></div>
+
+        <div class="action-row">
+          <button id="btnMulai" class="btn primary lg" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="none"/></svg>Mulai streaming</button>
+          <button id="btnStop" class="btn danger lg" type="button" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/></svg>Berhenti</button>
+        </div>
+
+        <div id="hasil" class="hasil" aria-live="polite"></div>
+      </div>
+
+      <aside class="side">
+        <div class="card">
+          <div class="card-heading"><div><h3>Kalibrasi ruangan</h3><p class="muted">Baseline suara tenang di perangkat ini.</p></div></div>
+          <div class="info-strip"><span class="info-icon">i</span><span id="infoKal">Memeriksa kalibrasi ...</span></div>
+          <div class="action-row compact">
+            <button id="btnKal" class="btn" type="button">Kalibrasi ulang</button>
+            <button id="btnSuara" class="btn" type="button">Tes suara</button>
+          </div>
+          <p id="infoMic" class="muted small"></p>
+        </div>
+        <div class="card">
+          <h3>Cara kerja</h3>
+          <ol class="mini-steps">
+            <li><b>Kalibrasi sekali.</b> Rekam ruangan tenang 2 × 10 detik. Pastikan hening.</li>
+            <li><b>Rekam 10 detik.</b> Audio diproses di server dengan model terpilih.</li>
+            <li><b>Peringatan.</b> Bila berisik, suara “Jangan rame!” diputar.</li>
+            <li><b>Jeda 5 detik,</b> lalu siklus berulang sampai dihentikan.</li>
+          </ol>
+        </div>
+      </aside>
+    </div>
+
+    <div class="card">
+      <div class="card-heading">
+        <div><h3>Riwayat deteksi</h3><p class="muted">Hasil prediksi dari sesi streaming saat ini.</p></div>
+        <span class="pill" id="ringkasRiwayat">Belum ada hasil</span>
+      </div>
+      <div class="strip" id="riwayatStrip" aria-label="Urutan hasil terbaru, paling baru di kanan"></div>
+      <div class="table-wrap"><table id="riwayat"><thead><tr><th>Waktu</th><th>Hasil</th><th>Peluang berisik</th><th>Level relatif</th><th>RMS</th></tr></thead><tbody></tbody></table></div>
+      <div class="kosong" id="riwayatKosong">Belum ada hasil. Mulai streaming untuk melihat deteksi di sini.</div>
+    </div>
+  </section>
+
+  <!-- ===================== PREDIKSI FILE ===================== -->
+  <section id="prediksi" class="panel">
+    <div class="section-heading">
+      <div><span class="eyebrow">Audio analysis</span><h2>Prediksi file audio</h2>
+      <p class="lead">Unggah rekaman, lalu lihat potongan mana yang terdeteksi berisik pada gelombangnya.</p></div>
+      <span class="section-tag">Upload audio</span>
+    </div>
+    <div class="card">
+      <p class="note first">Audio dipotong per 10 detik (maksimal 6 potongan) dan setiap potongan diprediksi oleh model yang sama dengan streaming. Penilaian bersifat relatif terhadap baseline ruangan tenang dari kalibrasi di perangkat ini.</p>
+      <label class="upload-box" id="dropzone" for="fAudio">
+        <span class="upload-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5m0 0-4 4m4-4 4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg></span>
+        <b id="fNama">Pilih atau seret file audio ke sini</b>
+        <small id="fInfo">MP3, WAV, M4A, atau format audio lain yang didukung browser (maksimal 25 MB)</small>
+        <input id="fAudio" class="sr" type="file" accept="audio/*">
+      </label>
+
+      <div class="wavebox" id="fWaveBox" hidden>
+        <canvas id="fGelombang" aria-label="Gelombang file audio dan hasil prediksi per potongan" role="img"></canvas>
+      </div>
+
+      <div class="info-strip"><span class="info-icon">i</span><span id="fKal">Memeriksa kalibrasi ...</span></div>
+      <div class="action-row">
+        <button id="btnFile" class="btn primary lg" type="button">Analisis audio</button>
+        <a id="linkKal" class="btn" href="#stream" hidden>Kalibrasi di tab Streaming</a>
+      </div>
+      <div id="fStatus" class="status-line" aria-live="polite">Siap menunggu file audio.</div>
+      <div id="fHasil" class="hasil" aria-live="polite"></div>
+    </div>
+    <div class="card">
+      <div class="card-heading"><div><h3>Rincian hasil prediksi</h3><p class="muted">Satu baris untuk setiap potongan 10 detik.</p></div></div>
+      <div class="table-wrap"><table id="fTabel"><thead><tr><th>Potongan</th><th>Hasil</th><th>Peluang berisik</th><th>Level relatif</th></tr></thead><tbody></tbody></table></div>
+      <div class="kosong" id="fKosong">Belum ada hasil analisis.</div>
+    </div>
+  </section>
+
+  <!-- ===================== TENTANG MODEL ===================== -->
+  <section id="eval" class="panel">
+    <div class="section-heading">
+      <div><span class="eyebrow">Model performance</span><h2>Tentang model</h2>
+      <p class="lead">Hasil evaluasi, fitur terpilih, perbandingan algoritma, dan alur proses sebelum modelling.</p></div>
+      <span class="section-tag">Hasil penelitian</span>
+    </div>
+    <div id="evalPesan" class="card muted">Memuat hasil evaluasi ...</div>
+
+    <div id="evalIsi" hidden>
+      <div class="card">
+        <div class="card-heading">
+          <div><h3>Model terpilih</h3><p class="muted" id="evalModel"></p></div>
+          <span class="pill ok">Data uji: perekam baru</span>
+        </div>
+        <div class="metric-grid" id="evalMetrik"></div>
+      </div>
+
+      <div class="grid g2">
+        <div class="card">
+          <h3>Cross-validation &amp; dataset</h3>
+          <dl class="kv" id="evalKv"></dl>
+        </div>
+        <div class="card">
+          <h3>Confusion matrix <small class="muted">data uji</small></h3>
+          <div id="evalCm"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-heading"><div><h3>Fitur terpilih</h3><p class="muted" id="evalFiturInfo"></p></div></div>
+        <div id="evalFitur"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-heading"><div><h3>Perbandingan algoritma</h3><p class="muted">Hasil terbaik setiap algoritma (dipilih dari CV data latih). Angka berasal dari <code>reports/perbandingan_model.csv</code>.</p></div></div>
+        <div class="table-wrap"><table id="tabelAlgo"></table></div>
+        <details class="det">
+          <summary>Lihat seluruh 50 percobaan (5 algoritma × 10 kombinasi fitur)</summary>
+          <div class="table-wrap"><table id="tabelEval"></table></div>
+        </details>
+      </div>
+
+      <div class="card">
+        <div class="card-heading"><div><h3>Alur proses backend sebelum modelling</h3><p class="muted">Dari audio mentah hingga model menghasilkan prediksi. Angka pada langkah-langkah ini dibaca dari hasil pelatihan yang tersimpan.</p></div></div>
+        <ol class="steps" id="evalLangkah"></ol>
+      </div>
+
+      <div class="card">
+        <h3>Grafik hasil pelatihan</h3>
+        <div class="grid g2 figs">
+          <figure class="fig"><img loading="lazy" src="/reports/05_perbandingan_model.png" alt="Heatmap accuracy per kombinasi fitur dan algoritma"><figcaption>Perbandingan model</figcaption></figure>
+          <figure class="fig"><img loading="lazy" src="/reports/04_confusion_matrix.png" alt="Confusion matrix data uji"><figcaption>Confusion matrix</figcaption></figure>
+          <figure class="fig"><img loading="lazy" src="/reports/06_feature_importance.png" alt="Fitur dengan skor ANOVA-F tertinggi"><figcaption>Fitur dengan skor tertinggi</figcaption></figure>
+          <figure class="fig"><img loading="lazy" src="/reports/01_boxplot_level.png" alt="Distribusi level audio mentah dan relatif"><figcaption>Distribusi level audio</figcaption></figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TENTANG PROYEK ===================== -->
+  <section id="proyek" class="panel">
+    <div class="section-heading">
+      <div><span class="eyebrow">CRISP-DM</span><h2>Tentang proyek</h2>
+      <p class="lead">Sistem deteksi suara berisik berbasis machine learning, dikerjakan mengikuti enam tahap CRISP-DM.</p></div>
+      <span class="section-tag">Kelompok 6</span>
+    </div>
+
+    <div class="proyek-grid">
+      <article class="tahap"><span class="no">1</span><div><h3>Business Understanding</h3><p>Sistem memantau suara ruangan lewat mikrofon dan memutar peringatan “Jangan rame!” saat terdeteksi berisik. Dapat dipakai dari laptop maupun HP lewat browser.</p></div></article>
+      <article class="tahap"><span class="no">2</span><div><h3>Data Understanding</h3><p>Rekaman audio berlabel berisik dan tidak berisik dari banyak perekam. Level mentah bergantung pada mikrofon, sehingga perlu dibandingkan dengan ruangan tenang perekam yang sama.</p></div></article>
+      <article class="tahap"><span class="no">3</span><div><h3>Data Preparation</h3><p>Audio mono 16 kHz, 47 fitur mentah (Librosa dan FFT), pembersihan duplikat dan label bertentangan, fitur relatif terhadap baseline kalibrasi, lalu pembagian data 80:20 per perekam.</p></div></article>
+      <article class="tahap"><span class="no">4</span><div><h3>Modelling</h3><p>Lima algoritma (SVM, Random Forest, KNN, Decision Tree, Logistic Regression) diuji pada 10 kombinasi fitur dengan grid search dan cross-validation per perekam. Model terbaik dipilih otomatis dari skor CV data latih.</p></div></article>
+      <article class="tahap"><span class="no">5</span><div><h3>Evaluation</h3><p>Accuracy, precision, recall, dan F1-score pada data uji dari perekam baru, ditambah cross-validation 5×5 pada seluruh data dan confusion matrix. Rinciannya ada di halaman Tentang model.</p></div></article>
+      <article class="tahap"><span class="no">6</span><div><h3>Deployment</h3><p>Aplikasi web Flask yang dijalankan dengan Docker pada port 8006. Rekaman 10 detik dari browser dikirim ke server, diprediksi, lalu peringatan suara diputar di browser.</p></div></article>
+    </div>
+
+    <div class="card">
+      <h3>Teknologi</h3>
+      <div class="chips tek">
+        <span class="chip">Python</span><span class="chip">Flask</span><span class="chip">Librosa</span><span class="chip">NumPy · FFT</span>
+        <span class="chip">scikit-learn</span><span class="chip">Web Audio API</span><span class="chip">Docker</span>
+      </div>
+    </div>
+
+    <h2 class="sub">Kelompok 6</h2>
+    <div class="tim">
+      <div class="anggota"><span class="avatar av1">RT</span><div><b>Rachelia Andini Tendean</b><code>240411100007</code></div></div>
+      <div class="anggota"><span class="avatar av2">AF</span><div><b>Ahmad Syahrul Farihin</b><code>240411100031</code></div></div>
+      <div class="anggota"><span class="avatar av3">RR</span><div><b>Rian Renaldy</b><code>240411100053</code></div></div>
+    </div>
+  </section>
+</main>
+<footer class="wrap foot">Sound Lab · Deteksi Kebisingan · Kelompok 6</footer>
+<script src="{{ url_for('static', filename='app.js') }}?v={{ aset_v('app.js') }}"></script>
+</body>
+</html>
