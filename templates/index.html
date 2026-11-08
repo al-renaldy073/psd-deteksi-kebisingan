@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%234C8DFF'/%3E%3Cpath d='M14 32h4M22 22v20M30 14v36M38 20v24M46 26v12M52 32h-2' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ aset_v('style.css') }}">
 </head>
-<body>
+<body data-jeda="{{ jeda }}">
 <div class="bg-glow" aria-hidden="true"></div>
 
 <header class="topbar">
@@ -28,6 +28,7 @@
       <a class="tab" href="#proyek" data-tab="proyek">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5.5a3 3 0 0 1 0 5.5M17 14.5a6 6 0 0 1 4 5.5"/></svg><span><span class="l-panjang">Tentang proyek</span><span class="l-pendek">Proyek</span></span></a>
     </nav>
+    <div class="user-chip"><span class="pill ok">Admin</span><a class="btn" href="#front" title="Lihat tampilan yang dilihat pengguna front (streaming tetap berjalan)">Tampilan front</a><a class="btn" href="/keluar">Keluar</a></div>
   </div>
 </header>
 
@@ -45,6 +46,8 @@
     </div>
 
     <div id="peringatanMic" class="alert alert-err" role="alert" hidden></div>
+    <div id="infoSesiLain" class="alert" role="status" hidden>Streaming sedang berjalan dari tab atau perangkat admin lain
+      (mikrofonnya ada di sana). <button id="btnHentiLain" class="btn" type="button">Hentikan streaming itu</button></div>
 
     <div class="stream-grid">
       <div class="card monitor">
@@ -105,13 +108,32 @@
           </div>
           <p id="infoMic" class="muted small"></p>
         </div>
+        <div class="card" id="kartuArduino" hidden style="display:none"><!-- sumber Arduino disiapkan untuk tahap hardware: hapus atribut hidden dan style untuk menampilkan -->
+          <div class="card-heading"><div><h3>Sumber Arduino</h3><p class="muted">Opsional: perangkat ESP32 + mikrofon I2S yang merekam sendiri.</p></div></div>
+          <p class="note first">Admin memerintah perangkat dari sini. Perangkat mengirim audio 10 detik ke server; hasilnya tampil di halaman front. Perlu <code>ARDUINO_TOKEN</code> pada <code>docker-compose.yml</code>. Panduan ada di folder <code>arduino/</code>.</p>
+          <div class="info-strip"><span class="info-icon">i</span><span id="ardStatus">Memeriksa perangkat ...</span></div>
+          <div class="action-row compact">
+            <button id="btnArdKal" class="btn" type="button">Kalibrasi Arduino</button>
+            <button id="btnArdMulai" class="btn" type="button">Mulai (Arduino)</button>
+            <button id="btnArdStop" class="btn danger" type="button">Berhenti</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Peran pengguna</h3>
+          <ol class="mini-steps">
+            <li><b>Admin</b> (halaman ini) satu-satunya yang dapat memulai dan menghentikan streaming.</li>
+            <li><b>Front</b> hanya melihat gelombang audio dan mendengar peringatan di <code>/front</code>; suara diaktifkan atau dimatikan dari sini.</li>
+          </ol>
+          <label class="cek"><input type="checkbox" id="chkSuaraFrontSrv" checked> Aktifkan suara peringatan di halaman front</label>
+          <label class="cek"><input type="checkbox" id="chkSuaraAdmin"> Putar peringatan juga di perangkat admin</label>
+        </div>
         <div class="card">
           <h3>Cara kerja</h3>
           <ol class="mini-steps">
             <li><b>Kalibrasi sekali.</b> Rekam ruangan tenang 2 × 10 detik. Pastikan hening.</li>
             <li><b>Rekam 10 detik.</b> Audio diproses di server dengan model terpilih.</li>
             <li><b>Peringatan.</b> Bila berisik, suara “Jangan rame!” diputar.</li>
-            <li><b>Jeda 5 detik,</b> lalu siklus berulang sampai dihentikan.</li>
+            <li><b>Jeda {{ jeda }} detik,</b> lalu siklus berulang sampai dihentikan.</li>
           </ol>
         </div>
       </aside>
@@ -254,6 +276,17 @@
       <div class="anggota"><span class="avatar av2">AF</span><div><b>Ahmad Syahrul Farihin</b><code>240411100031</code></div></div>
       <div class="anggota"><span class="avatar av3">RR</span><div><b>Rian Renaldy</b><code>240411100053</code></div></div>
     </div>
+  </section>
+  <!-- ===================== TAMPILAN FRONT (tertanam; streaming tetap berjalan) ===================== -->
+  <section id="front" class="panel">
+    <div class="section-heading">
+      <div><span class="eyebrow">Live view</span><h2>Tampilan front</h2>
+      <p class="lead">Ini yang dilihat pengguna front, ditampilkan di dalam dashboard sehingga <b>streaming tetap berjalan</b>.
+        Jangan membuka <code>/front</code> di tab yang sama: itu menutup dashboard dan menghentikan pemrosesan.</p></div>
+      <span class="section-tag"><a href="#stream">← Kembali ke Streaming</a> · <a href="/front" target="_blank" rel="noopener">Buka di tab baru</a></span>
+    </div>
+    <label class="cek" style="margin-bottom:12px"><input type="checkbox" id="chkSuaraFront"> Putar peringatan juga di perangkat ini</label>
+    <iframe id="frameFront" title="Tampilan front" data-src="/front?embed=1" style="width:100%;height:80vh;min-height:520px;border:0;border-radius:16px"></iframe>
   </section>
 </main>
 <footer class="wrap foot">Sound Lab · Deteksi Kebisingan · Kelompok 6</footer>
