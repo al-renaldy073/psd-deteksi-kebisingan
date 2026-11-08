@@ -9,7 +9,7 @@
 | Rian Renaldy | 240411100053 |
 
 Aplikasi web (Flask) yang merekam mikrofon otomatis dengan pola **rekam 10 detik, proses model, peringatan suara
-"Jangan rame!" bila berisik, jeda 5 detik, ulang** sampai dihentikan. Kebisingan dinilai **relatif terhadap ruangan tenang**
+"Jangan rame!" bila berisik, jeda 2 detik, ulang** sampai dihentikan. Kebisingan dinilai **relatif terhadap ruangan tenang**
 dari mikrofon yang sama (kalibrasi), sehingga hasilnya tidak bergantung pada gain atau merek mikrofon.
 Tampilan memakai tema gelap bergaya Sound Lab, responsif untuk HP, tablet, dan laptop.
 
@@ -118,6 +118,7 @@ git push -u origin main
 | `/api/prediksi` | POST | Prediksi satu rekaman dengan baseline hasil kalibrasi. |
 | `/api/simpan` | POST | Simpan klip berlabel ke `data/raw`. |
 | `/api/peringatan` | GET | File suara peringatan. |
+| `/api/suara-front` | POST | Admin mengaktifkan/mematikan suara peringatan di halaman front. |
 | `/reports/<nama>` | GET | Grafik dan laporan hasil pelatihan. |
 
 Audio dikirim sebagai PCM float32 mentah (`audio`) bersama `sr` (sample rate) dalam `multipart/form-data`; batas ukuran 40 MB.
@@ -161,3 +162,29 @@ lalu jalankan `python src/extract_dataset.py` dan `python src/train.py`. Label h
 ## Pengaturan
 `src/config.py`: `KODE_DIABAIKAN` (kode perekam yang dikeluarkan), `KALIBRASI_MAKS_RMS` (batas ruangan dianggap tidak tenang).
 Setelah mengubah definisi fitur, naikkan `FITUR_VERSI`, lalu jalankan ulang `extract_dataset.py` dan `train.py`.
+
+## Peran pengguna: admin dan front
+Aplikasi punya dua peran. Buka `/login` untuk memilih.
+
+| Peran | Dapat melakukan |
+|---|---|
+| **Admin** (password) | Mulai dan berhenti streaming, kalibrasi, prediksi file, kumpulkan data, evaluasi model, memerintah Arduino |
+| **Front** (tanpa password) | Hanya melihat gelombang audio dan mendengar peringatan di `/front`; tidak bisa memulai atau menghentikan streaming |
+
+* Atur password admin dengan variabel `ADMIN_PASSWORD` dan kunci sesi dengan `SECRET_KEY` (lihat `docker-compose.yml`). Bawaannya hanya untuk percobaan.
+* Mikrofon tetap diambil di browser admin (`getUserMedia()`). Selama merekam, admin mengirim ringkasan gelombang ke server; halaman front membacanya dari `/api/status`.
+* Hasil deteksi dibagikan ke front, dan **front yang memutar suara “Jangan rame!”**. Karena itu mikrofon admin tidak merekam suara peringatan saat jeda 2 detik berjalan.
+  Centang “Putar peringatan juga di perangkat admin” bila ingin suara di perangkat admin juga.
+* Suara peringatan di front diatur dari dashboard admin (kotak centang **Aktifkan suara peringatan di halaman front**, aktif secara bawaan). Halaman front tidak punya tombol suara maupun streaming; karena aturan browser, satu ketukan di mana saja pada halaman front tetap diperlukan sebelum suara bisa diputar otomatis.
+* **Jangan membuka `/front` di tab yang sama dengan dashboard admin yang sedang streaming.** Mikrofon dan siklus streaming hidup di
+  halaman admin, jadi berpindah halaman menghentikan pemrosesan (front akan menampilkan “Sumber tidak mengirim data”). Pakai tombol
+  **Tampilan front** di dashboard (tertanam di tab yang sama), atau buka `/front` di tab/perangkat lain. Masuk sebagai front dari
+  browser yang sedang dipakai admin tidak lagi menurunkan sesi admin.
+* Streaming memakai token sendiri (header `X-Stream-Token`, dibuat saat admin menekan Mulai), bukan cookie login. Jadi **tab admin yang sedang
+  merekam tetap berjalan walau di tab lain Anda keluar atau masuk sebagai front**. Tab itu harus tetap terbuka (mikrofonnya ada di sana);
+  keluar di tab yang sama menghentikan streaming. Streaming yang berjalan dari tab/perangkat lain dapat dihentikan dari dashboard admin
+  lewat tombol **Hentikan streaming itu**.
+* Semua endpoint penting (`/api/kontrol`, `/api/prediksi`, `/api/kalibrasi`, `/api/simpan`, `/api/gelombang`, `/api/info`) hanya untuk admin.
+
+## Arduino
+Lihat `arduino/README.md` untuk komponen yang disarankan (ESP32 atau Arduino Nano ESP32 dengan mikrofon I2S INMP441), pengkabelan, dan sketch.
