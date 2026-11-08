@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#070B14">
+  <title>Front · Sound Lab · Kelompok 6</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ aset_v('style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='front.css') }}?v={{ aset_v('front.css') }}">
+</head>
+<body{% if embed %} class="embed"{% endif %}>
+<div class="bg-glow" aria-hidden="true"></div>
+{% if not embed %}<header class="topbar">
+  <div class="wrap topbar-in">
+    <span class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4C8DFF"/><stop offset="1" stop-color="#22D3EE"/></linearGradient></defs><rect width="40" height="40" rx="11" fill="url(#lg)"/><path d="M9 20h2.5M15 13v14M20.5 8v24M26 14v12M31.5 18v4" stroke="#07101f" stroke-width="2.8" stroke-linecap="round"/></svg>
+      <span><b>Sound Lab</b><small>Tampilan front</small></span></span>
+    <div class="user-chip"><span class="pill">{{ 'Admin' if peran == 'admin' else 'Front' }}</span>
+      {% if peran == 'admin' %}<a class="btn" href="/">Dashboard admin</a>{% endif %}<a class="btn" href="/keluar">Keluar</a></div>
+  </div>
+</header>{% endif %}
+<main class="wrap front-main">
+  <div class="section-heading">
+    <div><span class="eyebrow">Live view</span><h1>Suara ruangan</h1>
+    <p class="lead">Halaman ini menampilkan gelombang audio dan peringatan. Streaming dan suara peringatan diatur oleh admin.</p></div>
+    <span class="section-tag">Model: <b id="fModel">SVM</b></span>
+  </div>
+
+  <div id="fBanner" class="front-banner" hidden></div>
+
+  <div class="card monitor">
+    <div class="card-heading">
+      <div><h3>Monitor suara</h3><p class="muted" id="fSumber">Menunggu admin memulai streaming.</p></div>
+      <span class="pill" id="fPill">Streaming berhenti</span>
+    </div>
+    <div class="scope" id="fScope">
+      <canvas id="fGel" role="img" aria-label="Visualisasi gelombang suara dari mikrofon admin"></canvas>
+      <div class="scope-hud"><span class="hud-fase" id="fFase" data-fase="siaga">Siaga</span><span class="hud-waktu" id="fWaktu">—</span></div>
+      <div class="scope-kosong" id="fKosong">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0M12 17v4"/></svg>
+        <span>Menunggu admin memulai streaming</span>
+      </div>
+      <div class="scope-bawah">
+        <div class="level" title="Level sinyal mikrofon, dalam dBFS (0 dBFS = batas maksimum)">
+          <span>Level</span><div class="level-track"><i id="fLevelBar"></i></div><b id="fLevel">—</b>
+        </div>
+        <div class="seg" role="group" aria-label="Tampilan gelombang">
+          <button type="button" class="aktif" data-mode="garis" aria-pressed="true">Gelombang</button>
+          <button type="button" data-mode="batang" aria-pressed="false">Batang</button>
+        </div>
+      </div>
+    </div>
+    <div id="fHasil" class="hasil" aria-live="polite"></div>
+    <p class="note" id="fCatatan" hidden>Browser memblokir pemutaran suara otomatis. Ketuk layar sekali agar peringatan terdengar.</p>
+  </div>
+</main>
+<script src="{{ url_for('static', filename='front.js') }}?v={{ aset_v('front.js') }}"></script>
+</body>
+</html>

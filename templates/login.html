@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#070B14">
+  <title>Masuk · Sound Lab · Kelompok 6</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ aset_v('style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='front.css') }}?v={{ aset_v('front.css') }}">
+</head>
+<body>
+<div class="bg-glow" aria-hidden="true"></div>
+<main class="wrap masuk">
+  <div class="masuk-judul">
+    <svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4C8DFF"/><stop offset="1" stop-color="#22D3EE"/></linearGradient></defs><rect width="40" height="40" rx="11" fill="url(#lg)"/><path d="M9 20h2.5M15 13v14M20.5 8v24M26 14v12M31.5 18v4" stroke="#07101f" stroke-width="2.8" stroke-linecap="round"/></svg>
+    <div><h1>Sound Lab</h1><p class="muted">Deteksi kebisingan · Kelompok 6. Pilih peran untuk masuk.</p></div>
+  </div>
+  {% if pesan %}<div class="alert alert-err" role="alert">{{ pesan }}</div>{% endif %}
+  <div class="masuk-grid">
+    <form class="card" method="post" action="/login" autocomplete="off">
+      <input type="hidden" name="peran" value="admin">
+      <h2>Admin</h2>
+      <p class="muted">Mengontrol sistem: <b>mulai dan berhenti streaming</b>, kalibrasi, prediksi file, kumpulkan data, dan melihat evaluasi model.</p>
+      <label class="field"><span>Password admin</span><input type="password" name="password" required autocomplete="current-password"></label>
+      <div class="action-row"><button class="btn primary lg" type="submit">Masuk sebagai admin</button></div>
+    </form>
+    <form class="card" method="post" action="/login">
+      <input type="hidden" name="peran" value="front">
+      <h2>Front</h2>
+      <p class="muted">Hanya menampilkan <b>gelombang audio</b> dan memutar <b>peringatan suara</b> saat terdeteksi berisik. Tidak bisa memulai atau menghentikan streaming.</p>
+      <div class="action-row"><button class="btn lg" type="submit">Masuk sebagai front</button></div>
+    </form>
+  </div>
+</main>
+</body>
+</html>
