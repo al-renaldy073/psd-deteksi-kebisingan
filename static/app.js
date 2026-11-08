@@ -4,7 +4,10 @@
    auto gain), kirim PCM float32 mentah ke Flask, server menghitung fitur + baseline + prediksi. */
 const $ = id => document.getElementById(id);
 const KUNCI = "kalibrasi_kebisingan";
-const DETIK = 10, JEDA = 5, MAKS_POTONGAN = 6, MAKS_FILE_MB = 25;
+const DETIK = 10, MAKS_POTONGAN = 6, MAKS_FILE_MB = 25;
+const JEDA = Number(document.body.dataset.jeda) || 2;      // nilai dari config.JEDA_DETIK lewat template
+let siaran = false, gelBuf = [], gelDb = -90;
+let tokenStream = null;     // token siklus streaming dari server: membuat streaming tetap diterima walau sesi login berganti
 let kirimAbort = null, mic = null, jalan = false, ctxAudio = null, kunciLayar = null, AMBANG = 0.5;
 const peringatan = new Audio("/api/peringatan");
 const tunggu = ms => new Promise(r => setTimeout(r, ms));
@@ -14,8 +17,8 @@ const bar = p => { $("bar").style.width = (100 * p) + "%"; };
 const nol = n => String(n).padStart(2, "0");
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
 
-// ---------- navigasi (hash: #stream, #prediksi, #eval, #proyek)
-const TABS = ["stream", "prediksi", "eval", "proyek"];
+// ---------- navigasi (hash: #stream, #prediksi, #eval, #proyek, #front)
+const TABS = ["stream", "prediksi", "eval", "proyek", "front"];
 function pilihTab(nama) {
   if (!TABS.includes(nama)) nama = "stream";
   document.querySelectorAll(".tab").forEach(t => {
@@ -26,6 +29,13 @@ function pilihTab(nama) {
   document.querySelectorAll(".panel").forEach(p => p.classList.toggle("aktif", p.id === nama));
   if (nama === "eval") muatEval();
   if (nama === "prediksi") gambarFile();
+  // Tampilan front tertanam (iframe): dimuat hanya saat tabnya dibuka, dikosongkan lagi saat ditinggalkan.
+  const fr = $("frameFront");
+  if (fr) {
+    const mau = nama === "front" ? fr.dataset.src : "about:blank";
+    if (fr.getAttribute("src") !== mau) fr.setAttribute("src", mau);
+  }
+  if (nama === "front") $("chkSuaraFront").checked = $("chkSuaraAdmin").checked;
   window.scrollTo(0, 0);
 }
 document.addEventListener("click", e => {
@@ -38,6 +48,12 @@ document.addEventListener("click", e => {
   pilihTab(nama);
 });
 window.addEventListener("popstate", () => pilihTab(location.hash.slice(1)));
+// Kotak centang suara di tab Tampilan front = kotak centang yang sama dengan di tab Streaming.
+$("chkSuaraFront").onchange = () => { $("chkSuaraAdmin").checked = $("chkSuaraFront").checked; };
+$("chkSuaraAdmin").addEventListener("change", () => { $("chkSuaraFront").checked = $("chkSuaraAdmin").checked; });
+// Mikrofon dan siklus streaming hidup di halaman ini: meninggalkannya (membuka /front di tab yang sama, menutup tab)
+// menghentikan pemrosesan, jadi minta konfirmasi selama streaming berjalan.
+window.addEventListener("beforeunload", e => { if (jalan) { e.preventDefault(); e.returnValue = ""; } });
 
 // ---------- konteks aman (HTTPS) dan izin mikrofon
 function pesanKonteks() {
@@ -240,7 +256,19 @@ const Gel = (() => {
 const FASE = {siaga: "Siaga", kalibrasi: "Kalibrasi", rekam: "Merekam", proses: "Memproses", jeda: "Jeda"};
 const URUT = ["kalibrasi", "rekam", "proses", "jeda"];
 let sedangKal = false;
+// ---------- siaran ke halaman front (hanya admin): fase siklus dan potongan gelombang
+async function kontrol(aksi, ekstra) {
+  const r = await fetch("/api/kontrol", {method: "POST", headers: Object.assign({"Content-Type": "application/json"}, tokenStream ? {"X-Stream-Token": tokenStream} : {}),
+                                          body: JSON.stringify(Object.assign({aksi}, ekstra || {}))});
+  let j = {}; try { j = await r.json(); } catch (e) { /* bukan JSON */ }
+  if (aksi === "mulai" && r.ok && j.token) tokenStream = j.token;
+  if (r.status === 401 || r.status === 403) { location.href = "/login"; throw new Error("Sesi admin berakhir."); }
+  if (!r.ok) throw new Error(j.galat || "Galat server (" + r.status + ")");
+  return j;
+}
+function kirimGel(v, db) { fetch("/api/gelombang", {method: "POST", headers: Object.assign({"Content-Type": "application/json"}, tokenStream ? {"X-Stream-Token": tokenStream} : {}), body: JSON.stringify({v, db})}).catch(() => {}); }
 function setFase(f) {
+  if (siaran) kontrol("fase", {fase: f}).catch(() => {});
   const h = $("hudFase"), idx = URUT.indexOf(f);
   h.dataset.fase = f; h.textContent = FASE[f] || f;
   document.querySelectorAll("#fase li").forEach(li => {
@@ -276,6 +304,12 @@ async function rekam(detik, onTick, aktif) {
     const d = e.inputBuffer.getChannelData(0), m = Math.min(d.length, target - n);
     if (m > 0) { buf.set(d.subarray(0, m), n); n += m; }
     terakhir = Date.now();
+    if (siaran) {   // ringkasan gelombang untuk halaman front: puncak per blok dan level dBFS
+      let pk = 0, ss = 0;
+      for (let i = 0; i < d.length; i++) { const x = d[i], a = x < 0 ? -x : x; ss += x * x; if (a > pk) pk = a; }
+      gelBuf.push(pk); gelDb = 20 * Math.log10(Math.sqrt(ss / d.length) + 1e-8);
+      if (gelBuf.length >= 3) kirimGel(gelBuf.splice(0), gelDb);
+    }
   };
   src.connect(proc); proc.connect(ctx.destination);
   Gel.mulai(ctx, src, detik);                  // hanya tampilan: analyser membaca sinyal, tidak mengubah audio yang direkam
@@ -297,7 +331,7 @@ function kirim(url, rek, tambahan) {
   Object.entries(tambahan || {}).forEach(([k, v]) => f.append(k, v));
   const ac = new AbortController(), batas = setTimeout(() => ac.abort(), 90000);
   kirimAbort = ac;
-  return fetch(url, {method: "POST", body: f, signal: ac.signal}).then(async r => {
+  return fetch(url, {method: "POST", body: f, signal: ac.signal, headers: tokenStream ? {"X-Stream-Token": tokenStream} : {}}).then(async r => {
     let j = {}; try { j = await r.json(); } catch (e) { /* bukan JSON */ }
     if (!r.ok) throw new Error(j.galat || "Galat server (" + r.status + ")");
     return j;
@@ -357,9 +391,10 @@ function putarPeringatan() {
 function hentikanPeringatan() { try { peringatan.pause(); } catch (e) { /* abaikan */ } if (selesaiPutar) selesaiPutar(); }
 $("btnSuara").onclick = async () => { await bukaKunciAudio(); await putarPeringatan(); };
 
-// ---------- streaming: [kalibrasi bila perlu] lalu rekam 10 detik, proses, peringatan bila berisik, jeda 5 detik, ulang
+// ---------- streaming: [kalibrasi bila perlu] lalu rekam 10 detik, proses, peringatan bila berisik, jeda (JEDA detik), ulang
 async function streaming(paksaKalibrasi) {
   jalan = true; aturTombol(true); $("hasil").className = "hasil"; Gel.kosong();
+  siaran = false;
   const siap = siapkanAudio();                 // dibuat pada klik pengguna (wajib untuk iOS/Android)
   siap.catch(() => {});                        // galatnya ditangkap di bawah lewat await siap
   try {
@@ -367,6 +402,7 @@ async function streaming(paksaKalibrasi) {
     await siap;
     await bukaMic();                           // minta izin mikrofon langsung saat klik
     tahanLayar();
+    if (paksaKalibrasi !== "saja") { await kontrol("mulai", {sumber: "browser"}); siaran = true; gelBuf = []; }   // front mulai menerima status
     let kal = ambilKalibrasi();
     const labelBeda = kal && kal.mic && labelMic() && kal.mic !== labelMic();
     if (paksaKalibrasi || !kal || labelBeda) { sedangKal = true; setFase("kalibrasi"); kal = await lakukanKalibrasi(2); sedangKal = false; }
@@ -378,9 +414,9 @@ async function streaming(paksaKalibrasi) {
       const r = await rekam(DETIK, tick, () => jalan);
       if (!jalan || !r.lengkap) break;
       bar(0); setFase("proses"); $("hudWaktu").textContent = "Memproses ..."; aturStatus(`Siklus ${siklus}: memproses ...`, true);
-      const h = await kirim("/api/prediksi", r, {baseline: JSON.stringify(kal.klip)});
+      const h = await kirim("/api/prediksi", r, {baseline: JSON.stringify(kal.klip), stream: "1"});
       tampilHasil(h);
-      if (h.label === "berisik") { aturStatus(`Siklus ${siklus}: memutar peringatan`, true); await putarPeringatan(); await tunggu(300); }
+      if (h.label === "berisik" && $("chkSuaraAdmin").checked) { aturStatus(`Siklus ${siklus}: memutar peringatan`, true); await putarPeringatan(); await tunggu(300); }
       setFase("jeda");
       for (let s = JEDA; s >= 1 && jalan; s--) { aturStatus(`Jeda ${s} detik sebelum rekaman berikutnya`, true); $("hudWaktu").textContent = `Berikutnya ${s} dtk`; bar((JEDA - s) / JEDA); await tunggu(1000); }
       bar(0);
@@ -389,6 +425,8 @@ async function streaming(paksaKalibrasi) {
   } catch (e) { aturStatus(jalan ? "Berhenti: " + e.message : "Dihentikan", false); }
   finally {
     jalan = false; sedangKal = false; setFase("siaga"); hudWaktu(0);
+    if (siaran) { siaran = false; kontrol("berhenti").catch(() => {}); }
+    tokenStream = null;
     tutupMic(); lepasLayar(); bar(0); aturTombol(false); tampilKal(); Gel.selesai(); Gel.kosong();
   }
 }
@@ -681,6 +719,36 @@ async function muatEval() {
     $("evalPesan").textContent = "Evaluasi belum dapat ditampilkan: " + e.message;
   } finally { evalSedang = false; }
 }
+
+// ---------- sumber Arduino (admin memerintah; perangkat merekam dan mengirim ke server)
+async function ardAksi(aksi, ekstra, pesan) {
+  try { await kontrol(aksi, ekstra); $("ardStatus").textContent = pesan; } catch (e) { $("ardStatus").textContent = e.message; }
+}
+$("btnArdKal").onclick = () => ardAksi("kalibrasi_arduino", {}, "Kalibrasi diminta: biarkan ruangan tenang, perangkat merekam 2 × 10 detik.");
+$("btnArdMulai").onclick = () => ardAksi("mulai", {sumber: "arduino"}, `Streaming Arduino dimulai. Perangkat merekam 10 detik, jeda ${JEDA} detik, berulang.`);
+$("btnArdStop").onclick = () => ardAksi("berhenti", {}, "Streaming dihentikan.");
+async function ardPoll() {
+  try {
+    const s = await (await fetch("/api/status", {cache: "no-store"})).json(), a = s.arduino || {};
+    if (!sinkronSuara && typeof s.suara_front === "boolean") $("chkSuaraFrontSrv").checked = s.suara_front;
+    $("infoSesiLain").hidden = !(s.jalan && s.sumber === "browser" && !jalan);
+    const online = a.terlihat_detik != null && a.terlihat_detik < 30;
+    $("ardStatus").textContent = (online ? "Perangkat Arduino terhubung" : "Perangkat Arduino belum terlihat") + (a.kalibrasi_diminta ? ` · kalibrasi diminta (${a.kalibrasi_diminta} klip)` : "") +
+      (s.jalan && s.sumber === "arduino" ? " · streaming Arduino berjalan" : s.jalan ? " · streaming browser berjalan" : "");
+  } catch (e) { /* abaikan */ }
+}
+// Suara peringatan di halaman front diatur admin (disimpan di server, dibaca front lewat /api/status).
+let sinkronSuara = false;
+$("chkSuaraFrontSrv").onchange = async () => {
+  const cb = $("chkSuaraFrontSrv"), nilai = cb.checked; sinkronSuara = true;
+  try {
+    const r = await fetch("/api/suara-front", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({aktif: nilai})});
+    if (!r.ok) throw new Error();
+  } catch (e) { cb.checked = !nilai; }
+  sinkronSuara = false;
+};
+$("btnHentiLain").onclick = async () => { try { await kontrol("berhenti"); } catch (e) { /* abaikan */ } ardPoll(); };
+setInterval(ardPoll, 3000); ardPoll();
 
 // ---------- awal
 (async () => {
