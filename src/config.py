@@ -12,6 +12,7 @@ REPORT_DIR = ROOT / "reports"
 
 SR = 16000
 CHUNK_DETIK = 10                 # durasi rekaman streaming mikrofon (dan ukuran potongan bila PAKAI_CHUNKING=True)
+JEDA_DETIK = 2                   # jeda antar siklus streaming (setelah hasil/peringatan, sebelum rekaman berikutnya)
 MIN_CHUNK_DETIK = 5              # potongan sisa yang lebih pendek dari ini dibuang (hanya bila PAKAI_CHUNKING=True)
 RMS_HENING = 0.001
 N_MFCC = 13
