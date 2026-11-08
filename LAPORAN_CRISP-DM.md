@@ -5,7 +5,7 @@
 terdeteksi berisik, dan tidak memberi peringatan saat tidak berisik. Sistem dapat dipakai dari laptop maupun HP lewat browser.
 
 **Revisi dosen yang dipenuhi.**
-1. Perekaman streaming otomatis: rekam 10 detik, modelling, jeda 5 detik, berulang sampai dihentikan.
+1. Perekaman streaming otomatis: rekam 10 detik, modelling, jeda 2 detik, berulang sampai dihentikan.
 2. Pengujian beberapa algoritma (SVM, Random Forest, KNN, Decision Tree, Logistic Regression) dan pemilihan model terbaik.
 3. Kombinasi fitur untuk meningkatkan akurasi (10 kombinasi).
 4. Seleksi fitur sebelum modelling (SelectKBest di dalam pipeline, hanya dari data latih).
@@ -117,7 +117,7 @@ Accuracy 90,6%, precision 85,0%, recall 100,0%, F1 91,9%.
   Mikrofon direkam di browser dengan echo cancellation, noise suppression, dan auto gain dimatikan agar level asli terjaga, lalu
   dikirim per 10 detik ke server sebagai PCM float32.
 * Streaming: klik Mulai, kalibrasi ruangan tenang otomatis bila perlu, lalu rekam 10 detik, proses model, putar peringatan
-  "Jangan rame!" bila berisik, jeda 5 detik, ulang sampai Berhenti. Pemrosesan audio browser berhenti selama peringatan
+  "Jangan rame!" bila berisik, jeda 2 detik, ulang sampai Berhenti. Pemrosesan audio browser berhenti selama peringatan
   diputar sehingga suara peringatan tidak ikut terekam. Prediksi memakai fungsi fitur, urutan kolom, dan pipeline yang
   sama dengan training.
 * **Akses HP dan laptop.** Browser hanya mengizinkan mikrofon pada HTTPS (atau localhost), sehingga aplikasi disediakan di belakang
