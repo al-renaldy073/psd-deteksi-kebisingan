@@ -1,0 +1,15 @@
+/* Tambahan untuk halaman login dan front (memakai tema style.css). */
+.masuk{max-width:860px;padding-top:6vh}
+.masuk-judul{display:flex;gap:16px;align-items:center;margin-bottom:22px}
+.masuk-judul .logo{width:54px;height:54px}.masuk-judul h1{margin:0;font-size:1.8rem}.masuk-judul p{margin:2px 0 0}
+.masuk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.masuk-grid .card{display:flex;flex-direction:column;gap:6px}.masuk-grid .field{margin:12px 0 4px}
+.user-chip{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.user-chip .btn{padding:8px 12px;font-size:.84rem;text-decoration:none}
+.front-main{padding-bottom:60px}
+.front-banner{margin:0 0 16px;padding:18px 20px;border-radius:16px;font-size:1.25rem;font-weight:800;text-align:center;
+  color:#fff;background:linear-gradient(135deg,#ff6a4d,#ff4d6a);box-shadow:0 0 0 0 rgba(255,106,77,.6);animation:denyut 1s ease-out 3}
+@keyframes denyut{to{box-shadow:0 0 0 22px rgba(255,106,77,0)}}
+@media (max-width:720px){.masuk-grid{grid-template-columns:minmax(0,1fr)}.user-chip .btn{padding:7px 10px}}
+/* Tertanam di dashboard admin (iframe ?embed=1): tanpa header dan tanpa catatan suara (suara diatur dari dashboard). */
+body.embed #fCatatan,body.embed .bg-glow{display:none!important}
+body.embed .front-main{padding-top:4px;padding-bottom:12px}
