@@ -374,3 +374,10 @@ h1{font-size:clamp(1.7rem,3.8vw,2.6rem);font-weight:800;letter-spacing:-.8px;lin
   .wavebox{height:120px}
   .tahap{padding:16px;gap:12px}
 }
+
+/* ---------- peran pengguna ---------- */
+.user-chip{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.user-chip .btn{padding:8px 12px;font-size:.84rem;text-decoration:none}
+.cek{display:flex;gap:8px;align-items:center;margin-top:12px;color:var(--muted);font-size:.86rem;cursor:pointer}
+.cek input{width:18px;height:18px}
+@media (max-width:720px){.user-chip .btn{padding:7px 9px;font-size:.78rem}.topbar-in{flex-wrap:wrap}}
